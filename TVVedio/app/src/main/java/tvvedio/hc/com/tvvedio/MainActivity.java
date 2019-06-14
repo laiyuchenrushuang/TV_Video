@@ -32,6 +32,7 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +41,7 @@ import butterknife.ButterKnife;
 import pl.droidsonroids.gif.GifImageView;
 import tvvedio.hc.com.tvvedio.upload.HttpService;
 import tvvedio.hc.com.tvvedio.utils.BitmapUtils;
+import tvvedio.hc.com.tvvedio.utils.TimeUtils;
 import tvvedio.hc.com.tvvedio.view.MySeekBar;
 
 /**
@@ -47,6 +49,8 @@ import tvvedio.hc.com.tvvedio.view.MySeekBar;
  */
 
 public class MainActivity extends Activity implements MediaPlayer.OnCompletionListener, MediaPlayer.OnPreparedListener, MediaPlayer.OnErrorListener, MediaPlayer.OnBufferingUpdateListener, View.OnClickListener, HttpService.HttpServiceResult {
+
+
     @BindView(R.id.video_surface)
     SurfaceView mSurfaceView;
     @BindView(R.id.iv_qrcode)
@@ -78,11 +82,13 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
 
     String truelList = null;
     String uid, token;
-    private final static int SUCCESS = 1;
-    private final static int PLAY_COMPLETE = 2;
-    private final static int PLAY_DELETE_URL = 3;
-    private final static int PLAY_DEFAULT = 4;
-    private final static int QRCODE_IMAGE_UPDATA = 5;
+    private static final int GET_NET_URLDM = 1; //获取url的代码值
+    private final static int PLAY_COMPLETE = 2; //播放完成
+    private final static int PLAY_DELETE_URL = 3; //在网络列表播放需要删除列表的url
+    private final static int PLAY_DEFAULT = 4;  //播放默认视频
+    private final static int QRCODE_IMAGE_UPDATA = 5; //二维码更新
+    private static final int DEFAULT_PLAY_ONLION = 6; //播放默认视频Onlion
+    private final static int SUCCESS = 7; //获取网络视频列表成功播放
 
     int count = 0;
     private static int THREE_MIN = 3 * 60 * 1000;
@@ -93,11 +99,13 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
     Context cotext;
     String ANDROID_ID;
 
-    long starttime, endTime, trueEndtime, timeoutStart;
+    long starttime, timeoutStart;
 
     private boolean playDefault = false;
 
     private Bitmap bitmap;
+
+    ArrayList<Map<String, String>> urlDMList = new ArrayList<>();
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -107,14 +115,14 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         requestPermission(this);
+
         listmap.put("curPage", "1");
         cotext = getApplicationContext();
-        HttpService.getInstance().getURLData(listmap, this);
+        HttpService.getInstance(this).getURLData(listmap, this);
 
 
         ANDROID_ID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
 
-        Log.i("lylog  ANDROID_ID", ANDROID_ID);
         initView();
 
         mythread.start();
@@ -187,34 +195,35 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
     private SurfaceHolder.Callback mSurfaceHolderCallBack = new SurfaceHolder.Callback() {
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
-//            playVideo(url);
-            if (playDefault) {
-                Log.i("lylog", " sssssssssss");
-                playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
-                playDefault = false;
-            }
+////            playVideo(url);
+//            if (playDefault) {
+//                Log.i("lylog", " sssssssssss");
+//                playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
+//                playDefault = false;
+//            }
 
         }
 
         @Override
         public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-            if (playDefault) {
-                Log.i("lylog", " surfaceChanged sssssssssss");
-                playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
-                playDefault = false;
-            }
+//            if (playDefault) {
+//                Log.i("lylog", " surfaceChanged sssssssssss");
+//                playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
+//                playDefault = false;
+//            }
         }
 
         @Override
         public void surfaceDestroyed(SurfaceHolder holder) {
-            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-                currentPosition = mediaPlayer.getCurrentPosition();
-                mediaPlayer.stop();
-            }
+//            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+//                currentPosition = mediaPlayer.getCurrentPosition();
+//                mediaPlayer.stop();
+//            }
         }
     };
 
     private void playVideo(String url) {
+        Log.i("lylog", "<result final>地址 = " + url + "\n" + " 主题 = " + currenttheme);
         mediaPlayer.reset();
         gif_networkwait.setVisibility(View.VISIBLE);
         // 设置声音效果
@@ -249,7 +258,6 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
             Message msg = new Message();
             msg.what = PLAY_COMPLETE;
             mHandler.sendMessage(msg);
-            trueEndtime = System.currentTimeMillis();
             isUpdate = false;//播放完不轮询了
 //            playVideo(truelList);
         }
@@ -261,11 +269,11 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
 
     @Override
     public void onPrepared(MediaPlayer mp) {
-        starttime = endTime = trueEndtime = timeoutStart =0; //每次播放新的都要清零
+        starttime = timeoutStart = 0; //每次播放新的都要清零
         new Thread(new Runnable() {
             @Override
             public void run() {
-                HttpService.getInstance().getQcCodeIamage(ANDROID_ID, MainActivity.this);
+                HttpService.getInstance(MainActivity.this).getQcCodeIamage(ANDROID_ID, MainActivity.this);
             }
         }).start();
         canPlay = true;
@@ -276,39 +284,28 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         int duration2 = mediaPlayer.getDuration() / 1000;
         seekBar.setMax(duration2);
         Log.i("lylog", " onPrepared d = " + duration2);
-        videoTime.setText(calculateTime(duration2));
+        videoTime.setText(TimeUtils.calculateTime(duration2));
         mediaPlayer.start();
 
         starttime = System.currentTimeMillis();
         timeoutStart = starttime;
-        endTime = starttime + mediaPlayer.getDuration();
-
-        Log.d("lylog", " starttime - endtime = " + (endTime - starttime));
 
         new Thread(new Runnable() {
             @Override
             public void run() {
                 while (!playBreak) {
                     if (isContinue) {
-                        int currentPosition = mediaPlayer.getCurrentPosition() / 1000;
-                        seekBar.setProgress(currentPosition);
 
-//                        long duration2 = mediaPlayer.getDu*+-*ration();
+                        currentPosition = mediaPlayer.getCurrentPosition();
+                        int position = currentPosition / 1000;
+                        seekBar.setProgress(position);
 
                         long currentTime = System.currentTimeMillis();
-//                        Log.i("lylog"," gengxin  ui  currentTime ="+currentTime + " timeoutStart= "+timeoutStart + "  bolean > 3min ="+Integer.valueOf(timeout) * 60 * 1000);
-                        if (!"".equals(timeout) && !TextUtils.isEmpty(timeout) &&(currentTime - timeoutStart) > Integer.valueOf(timeout) * 60 * 1000) {
-                            HttpService.getInstance().getQcCodeIamage(ANDROID_ID, MainActivity.this);
-                            Log.i("lylog"," gengxin  ui ");
+                        if (!"".equals(timeout) && !TextUtils.isEmpty(timeout) && (currentTime - timeoutStart) > Integer.valueOf(timeout) * 60 * 1000) {
+                            HttpService.getInstance(MainActivity.this).getQcCodeIamage(ANDROID_ID, MainActivity.this);
+                            Log.i("lylog", " gengxin  ui ");
                             timeoutStart = currentTime;
                         }
-////                        boolean TimeDis = (currentTime - starttime) > duration2;
-//                        long current = mediaPlayer.getCurrentPosition();
-//                        if ((duration2 - current) < THREE_MIN) {
-//                            isUpdate = true;
-////                            HttpService.getInstance().getQcCodeIamage(ANDROID_ID, MainActivity.this);
-//                        }
-                        Log.i("lylog", " ");
                     }
 
                     try {
@@ -324,63 +321,13 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
 
     @Override
     public boolean onError(MediaPlayer mp, int what, int extra) {
-        Log.d("lylog", " onError  = ");
+        Log.i("lylog", " onError  = ");
         canPlay = false;
         return false;
     }
 
     @Override
     public void onBufferingUpdate(MediaPlayer mp, int percent) {
-
-        /*if (mediaPlayer != null && mediaPlayer.isPlaying()) {
-            currentPosition = mediaPlayer.getCurrentPosition();
-        }
-
-        seekBar.setProgress((int) (((float) currentPosition) * 100 / mediaPlayer.getDuration()));//精确进度条*/
-
-    }
-
-
-    private String calculateTime(int time) {
-        int minute;
-        int second;
-
-        String strMinute;
-
-        if (time >= 60) {
-            minute = time / 60;
-            second = time % 60;
-
-            //分钟在0-9
-            if (minute >= 0 && minute < 10) {
-                //判断秒
-                if (second >= 0 && second < 10) {
-                    return "0" + minute + ":" + "0" + second;
-                } else {
-                    return "0" + minute + ":" + second;
-                }
-
-            } else
-            //分钟在10以上
-            {
-                //判断秒
-                if (second >= 0 && second < 10) {
-                    return minute + ":" + "0" + second;
-                } else {
-                    return minute + ":" + second;
-                }
-            }
-
-        } else if (time < 60) {
-            second = time;
-            if (second >= 0 && second < 10) {
-                return "00:" + "0" + second;
-            } else {
-                return "00:" + second;
-            }
-
-        }
-        return null;
     }
 
     private void play(int currentPosition) {
@@ -501,11 +448,12 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
 
     @Override
     public void success(String result, int code) {
-        if (code == 1) {
+        if (code == GET_NET_URLDM) {
             urlList = JsonUtils.getIncetance().getURLlist(result);
-            Log.i("lylog", " success code = 1 size =" + urlList.toString());
+            Log.i("lylog", " success code = 1 urlList =" + urlList.toString());
             if (null != urlList.get("url")) {
-                HttpService.getInstance().getTokenUid(getApplicationContext(), this);
+                currenttheme = urlList.get("theme");
+                HttpService.getInstance(this).getTokenUid(getApplicationContext(), this);
             } else {
 //                HttpService.getInstance().getURLData(listmap, this);
                 Log.i("lylogs", "  truelList =" + truelList);
@@ -521,10 +469,17 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
             }
         }
 
-        if (code == 2) {
+        if (code == SUCCESS) {
             truelList = result; //真正的url
             Message msg = new Message();
             msg.what = SUCCESS;
+            mHandler.sendMessage(msg);
+        }
+        if (code == DEFAULT_PLAY_ONLION) {
+            String randomUrl = result; //真正的url
+            Message msg = new Message();
+            msg.obj = randomUrl;
+            msg.what = DEFAULT_PLAY_ONLION;
             mHandler.sendMessage(msg);
         }
     }
@@ -541,10 +496,10 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
             super.run();
             while (true) {
                 if (isUpdate) {
-                    HttpService.getInstance().getQRState(uuid, ANDROID_ID, MainActivity.this);
+                    HttpService.getInstance(MainActivity.this).getQRState(uuid, ANDROID_ID, MainActivity.this);
                 }
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(2000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -553,6 +508,7 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
     };
 
     private boolean isUpdate = false;
+    private String currenttheme = null;
     @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
@@ -570,11 +526,11 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
                     break;
                 case PLAY_COMPLETE:
                     Log.i("lylog", " PLAY_COMPLETE");
-                    HttpService.getInstance().getURLData(listmap, MainActivity.this);
+                    HttpService.getInstance(MainActivity.this).getURLData(listmap, MainActivity.this);
                     qrcodeImageView.setImageBitmap(null);  //每次播放完成 都要删除 二维码
                     break;
                 case PLAY_DELETE_URL:
-                    HttpService.getInstance().deleteUrlFromServer(urlList.get("url"));
+                    HttpService.getInstance(MainActivity.this).deleteUrlFromServer(urlList.get("url"));
                     break;
                 case QRCODE_IMAGE_UPDATA:
                     isUpdate = true; //二维码重新更新 looping也需要打开去监听
@@ -585,36 +541,31 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
                         }
                         bitmap = BitmapUtils.stringToBitmap(base64);
                         qrcodeImageView.setImageBitmap(bitmap);
-
-
-
-                       /* //一直要请求看是否被扫码
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                while (isUpdate) {
-                                    HttpService.getInstance().getQRState(uuid, ANDROID_ID, MainActivity.this);
-                                    try {
-                                        Thread.sleep(500);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }
-                        }).start();*/
-
                     }
                     break;
                 case PLAY_DEFAULT:
                     // 避免surface没建立好久开始播放
                     Log.i("lylog", " PLAY_DEFAULT");
-                    if (surfaceHolder.isCreating()) {
-                        Log.i("lylogss", " isCreating");
-                        playDefault = true;
+
+                    if (!"".equals(msg.arg1) && msg.arg1 == DEFAULT_PLAY_ONLION && urlDMList.size() > 0) {
+                        int randomNum = (int) (Math.random() * urlDMList.size());
+
+                        String randomUrldm = urlDMList.get(randomNum).get("url").replace("\"", "").replace("\\n", "");//去掉“，去掉\n
+
+                        currenttheme = urlDMList.get(randomNum).get("theme");
+
+                        HttpService.getInstance(MainActivity.this).getTrueUrl(randomUrldm, uid, token, MainActivity.this, DEFAULT_PLAY_ONLION);
                     } else {
-                        playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
+                        HttpService.getInstance(MainActivity.this).getRandomURLForDefaultPlay(MainActivity.this);
+//                            playVideo("http://bjcdn2.vod.migucloud.com/mgc_transfiles/200010145/2019/5/19/1EYo9UNOF95HCK30a3mHY/cld640p/video_1EYo9UNOF95HCK30a3mHY_cld640p.m3u8");
                     }
 
+                    break;
+
+                case DEFAULT_PLAY_ONLION:
+                    Log.i("lylog", " DEFAULT_PLAY_ONLION");
+                    String randomUrl = (String) msg.obj;
+                    playVideo(randomUrl);
                     break;
             }
         }
@@ -625,13 +576,16 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         this.uid = uid;
         this.token = token;
         if (!"".equals(token) && !"".equals(uid) && null != urlList.get("url")) {
-            HttpService.getInstance().getTrueUrl(urlList.get("url").replace("\"", ""), uid, token, this, getApplicationContext());
+            HttpService.getInstance(MainActivity.this).getTrueUrl(urlList.get("url").replace("\"", ""), uid, token, this, SUCCESS);
         }
     }
 
     @Override
     public void failed(String result) {
-
+        Log.i("lylog", " urldmList get failed");
+        Message msg = new Message();
+        msg.what = PLAY_DEFAULT;
+        mHandler.sendMessage(msg);
     }
 
     @Override
@@ -657,13 +611,29 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         Log.i("lylog", " sfzhmCallBack theme =" + urlList.get("theme"));
         //如果callback回来 分两部分，一部分 生成新的二维码，另一部分把上个用户信息向服务器请求下去
         // 需要的参数 有uuid（uuid），sbbh(设备编号)，sfzmhm（身份证编号），kssj（开始时间），jssj（结束时间），kjmc（课程名称）
-        long time = System.currentTimeMillis();
-        HttpService.getInstance().sendInfotoH5Server(uuid, ANDROID_ID, sfzhm.replace("\"", ""), starttime, time, urlList.get("theme").replace("\"", ""));
+
+        long time = System.currentTimeMillis(); //扫码当前时间
+        if (urlList.size() > 0) {
+            HttpService.getInstance(MainActivity.this).sendInfotoH5Server(uuid, ANDROID_ID, sfzhm.replace("\"", ""), starttime, time, urlList.get("theme").replace("\"", ""));
+        }
 
         //同时也要更新二维码
 //        if(isUpdate){
-        HttpService.getInstance().getQcCodeIamage(ANDROID_ID, MainActivity.this);
+        HttpService.getInstance(MainActivity.this).getQcCodeIamage(ANDROID_ID, MainActivity.this);
 //        }
+
+    }
+
+    @Override
+    public void RandomURLForDefaultPlayCallback(String uid, String token, ArrayList<Map<String, String>> urlDmList) {
+        this.urlDMList = urlDmList;
+        this.uid = uid;
+        this.token = token;
+
+        Message msg = new Message();
+        msg.what = PLAY_DEFAULT;
+        msg.arg1 = DEFAULT_PLAY_ONLION;
+        mHandler.sendMessage(msg);
 
     }
 

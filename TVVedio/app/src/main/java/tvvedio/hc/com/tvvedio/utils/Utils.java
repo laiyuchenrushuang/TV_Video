@@ -16,9 +16,9 @@ public class Utils {
 
     public class NetWorkUtil {
 
-//                public final static String BASE_IP = "http://192.168.0.53:8085";
+                public final static String BASE_IP = "http://192.168.0.53:8085";
 //        public final static String BASE_IP = "http://10.65.37.225:8085";
-        public final static String BASE_IP = "http://xxjf.cdjg.chengdu.gov.cn:8090";
+//        public final static String BASE_IP = "http://xxjf.cdjg.chengdu.gov.cn:8090";
 
         public final static String BASE_URL = BASE_IP+"/jyptdbctl/video/getTvVideo?";
 

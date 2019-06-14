@@ -1,9 +1,7 @@
 package tvvedio.hc.com.tvvedio.upload;
 
 import android.content.Context;
-import android.text.TextUtils;
 import android.util.Log;
-import android.widget.SeekBar;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -12,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +21,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import tvvedio.hc.com.tvvedio.JsonUtils;
-import tvvedio.hc.com.tvvedio.MainActivity;
 import tvvedio.hc.com.tvvedio.utils.Utils;
 
 /**
@@ -33,8 +29,10 @@ import tvvedio.hc.com.tvvedio.utils.Utils;
 
 public class HttpService {
     private static HttpService mHttpService;
+    static Context mContext;
 
-    public static HttpService getInstance() {
+    public static HttpService getInstance(Context context) {
+        mContext = context;
         if (mHttpService == null) {
             synchronized (HttpService.class) {
                 if (mHttpService == null) {
@@ -46,13 +44,12 @@ public class HttpService {
     }
 
     public void getURLData(Map map, final HttpService.HttpServiceResult callback) {
-//        map.put("type", "1");
-//        map.put("curPage", "1");
+
         map.put("pageSize", "1");//获取最新的
-        //192.168.0.53:8085/jyptdbctl/video/getTvVideo?curPage=1&pageSize=10
+        //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getTvVideo?curPage=1&pageSize=10
 
         String url = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getTvVideo?" + "curPage=" + map.get("curPage") + "&" + "pageSize=" + map.get("pageSize");
-        Log.d("lylog", "getURLData type = " + map.get("type") + " curPage" + map.get("curPage"));
+
         Log.i("lylog", "getURLData url = " + url);
         OkHttpClient okHttpClient = new OkHttpClient();
         final Request request = new Request.Builder()
@@ -71,7 +68,7 @@ public class HttpService {
                     callback.success(response.body().string(), 1);
                 } else {
                     callback.failed(response.body().string());
-                    Log.d("lylogNet", " response error2");
+                    Log.i("lylogNet", " response error2");
                 }
             }
         });
@@ -93,19 +90,19 @@ public class HttpService {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 String result = response.body().string();
-                String uid = JsonUtils.getIncetance().getElement("uid", result);
-                String token = JsonUtils.getIncetance().getElement("token", result);
-                Log.d("lylog", " uid = " + uid + " token = " + token);
+                uid = JsonUtils.getIncetance().getElement("uid", result);
+                token = JsonUtils.getIncetance().getElement("token", result);
+                Log.i("lylog", " uid = " + uid + " token = " + token);
                 callback.tokenCallback(uid, token);
             }
         });
 
     }
 
-    public void getTrueUrl(String url, String uid, String token, final HttpServiceResult callback, final Context context) {
+    public void getTrueUrl(String url, String uid, String token, final HttpServiceResult callback, final int flag) {
 
         String urlall = "http://bj.migucloud.com/vod2/v1/download_spotviurl?" + "uid=" + uid + "&token=" + token + "&vid=" + url + "&vtype=0,1,2";
-        Log.i("lylog", "  ssss = " + urlall);
+        Log.i("lylog", " trueUrl 地址 = " + urlall);
         OkHttpClient okHttpClient = new OkHttpClient();
         final Request request = new Request.Builder()
                 .url(urlall)
@@ -114,7 +111,7 @@ public class HttpService {
             @Override
             public void onFailure(Call call, IOException e) {
 
-                Utils.showToast(context, "trueUrl 获取失败");
+                Utils.showToast(mContext, "trueUrl 获取失败");
             }
 
             @Override
@@ -124,7 +121,7 @@ public class HttpService {
                 String urlTrue = JsonUtils.getIncetance().getTrueUrl(result);
                 Log.i("lylog", " urlTrue =" + urlTrue);
                 if (!"".equals(urlTrue)) {
-                    callback.success(urlTrue, 2);
+                    callback.success(urlTrue, flag);
                 }
 
             }
@@ -164,7 +161,7 @@ public class HttpService {
     public void getQcCodeIamage(String ANDROID_ID, final HttpServiceResult callbak) {
 
         String requestUrl = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/qr/getQr?" + "sbbh=" + ANDROID_ID;
-        Log.d("lylog","  new url "+requestUrl);
+        Log.d("lylog", "  new url " + requestUrl);
         try {
             URL url = new URL(requestUrl);
             HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -188,9 +185,9 @@ public class HttpService {
                 String result = streamToString(urlConn.getInputStream());
                 Log.i("lylog ss", "Get方式请求成功，result--->" + result);
 //                String string = response.body().string();
-                    Map<String, String> qrcode = new HashMap<>();
-                    qrcode = JsonUtils.getIncetance().getQrImaget(result);
-                    callbak.qrcodeUuidAndLimitTime(qrcode);
+                Map<String, String> qrcode = new HashMap<>();
+                qrcode = JsonUtils.getIncetance().getQrImaget(result);
+                callbak.qrcodeUuidAndLimitTime(qrcode);
             } else {
                 Log.i("lylog ss", "Get方式请求失败");
             }
@@ -254,9 +251,9 @@ public class HttpService {
                     //但是还是去解析
                     JsonObject jsonObject = (JsonObject) parserLunXun.parse(string);
                     JsonObject json = jsonObject.get("data").getAsJsonObject();
-                    Log.i("lylog", "getQRState json.get(\"smbz\") =" +  "  json.get(\"sfzmhm\") = "+json.get("sfzmhm") + " equal = "+("".equals(json.get("sfzmhm"))  + " text ="+TextUtils.isEmpty(json.get("sfzmhm")+"")));
+//                    Log.i("lylog", "getQRState json.get(\"smbz\") =" + "  json.get(\"sfzmhm\") = " + json.get("sfzmhm") + " equal = " + ("".equals(json.get("sfzmhm")) + " text =" + TextUtils.isEmpty(json.get("sfzmhm") + "")));
                     if (!"".equals(json.get("smbz")) && json.get("smbz").getAsString().equals("1")) {//smbz的状态1 为被人扫码了
-                        if (json.get("sfzmhm")!=null && !"null".equals(json.get("sfzmhm").getAsString()) && json.get("sfzmhm").getAsString().length() != 0) {
+                        if (json.get("sfzmhm") != null && !"null".equals(json.get("sfzmhm").getAsString()) && json.get("sfzmhm").getAsString().length() != 0) {
                             String sfzhm = json.get("sfzmhm").getAsString();//身份证号码
                             Log.i("lylog", "getQRState sfzhm =" + sfzhm);
                             callback.sfzhmCallBack(sfzhm);
@@ -271,7 +268,7 @@ public class HttpService {
     public void sendInfotoH5Server(String uuid, String android_id, String sfzhm, long starttime, long trueEndtime, String theme) {
         String urls = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/qr/submitstudy?" + "uuid=" + uuid + "&sbbh=" + android_id + "&sfzmhm=" + sfzhm + "&kssj=" + starttime + "&jssj=" + trueEndtime + "&kjmc=" + theme;
 
-        Log.d("lylog","  sendInfotoH5Server new url ");
+        Log.d("lylog", "  sendInfotoH5Server new url ");
         try {
             URL url = new URL(urls);
             HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -310,6 +307,81 @@ public class HttpService {
 
     }
 
+    static ArrayList<Map<String, String>> urlDmList = new ArrayList<>();
+    static String uid, token;
+
+    public void getRandomURLForDefaultPlay(final HttpServiceResult callback) {
+        //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getVideoPage?&curPage=1&pageSize=100
+
+
+        String url = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getVideoPage?&curPage=1&pageSize=100";
+        OkHttpClient okHttpClient = new OkHttpClient();
+        final Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        okHttpClient.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                Log.d("lylogNet", " getLXdata response error1");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+
+                    String result = response.body().string();
+
+                    urlDmList = JsonUtils.getIncetance().geturlList(result);
+
+                } else {
+
+                }
+
+            }
+        });//得到Response 对象
+//        Log.i("lylog", " urlDmList = " + urlDmList.toString());
+//        if (!TextUtils.isEmpty(uid) && !TextUtils.isEmpty(token)) {
+//
+//        } else {
+////            getTokenUid(mContext, callback);
+//        }
+
+        OkHttpClient okHttpClient1 = new OkHttpClient();
+        String url1 = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getUidToken";
+        final Request request1 = new Request.Builder()
+                .url(url1)
+                .build();
+
+        okHttpClient1.newCall(request1).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+//                Utils.showToast(context, "token state = 1");
+                Log.i("lylog", " onFailure token");
+            }
+
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                String result = response.body().string();
+                Log.i("lylog_1", " result = " + result);
+                JsonParser parser = new JsonParser();
+                JsonObject jsons = (JsonObject) parser.parse(result);
+                String code = jsons.get("code").getAsString();
+                if ("0".equals(code)) {
+                    JsonObject dataJson = jsons.get("data").getAsJsonObject();
+                    uid = dataJson.get("uid").getAsString();
+                    token = dataJson.get("token").getAsString();
+                    Log.i("lylogr", " uid = " + uid + "\n" + " token =" + token + " urlDmList= " + urlDmList.toString());
+                    callback.RandomURLForDefaultPlayCallback(uid, token, urlDmList);
+                } else {
+//                    Utils.showToast(context, "token state = 1");
+                    Log.i("lylog", " onResponse code != 0");
+                }
+
+            }
+        });
+    }
+
     public interface HttpServiceResult {
         void success(String result, int code);
 
@@ -321,5 +393,7 @@ public class HttpService {
         void qrcodeUuidAndLimitTime(Map<String, String> qrcode);
 
         void sfzhmCallBack(String sfzhm);
+
+        void RandomURLForDefaultPlayCallback(String uid, String token, ArrayList<Map<String,String>> urlDmList);
     }
 }

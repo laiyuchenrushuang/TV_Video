@@ -20,8 +20,8 @@ public class BitmapUtils {
             int width = bitmap.getWidth();
             int height = bitmap.getHeight();
             // 计算缩放比例.
-            float scaleWidth = ((float) 210) / width;
-            float scaleHeight = ((float) 210) / height;
+            float scaleWidth = ((float) 180) / width;
+            float scaleHeight = ((float) 180) / height;
             // 取得想要缩放的matrix参数.
             Matrix matrix = new Matrix();
             matrix.postScale(scaleWidth, scaleHeight);
