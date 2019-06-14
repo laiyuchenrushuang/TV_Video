@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">蓉e行视频体验</string>
+    <string name="app_error">网络连接失败或者网络地址有错</string>
+</resources>
