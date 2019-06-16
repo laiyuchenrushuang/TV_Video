@@ -32,9 +32,19 @@ import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.neovisionaries.ws.client.WebSocket;
+import com.neovisionaries.ws.client.WebSocketAdapter;
+import com.neovisionaries.ws.client.WebSocketException;
+
+import com.neovisionaries.ws.client.WebSocketFactory;
+import com.neovisionaries.ws.client.WebSocketFrame;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.function.LongUnaryOperator;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -90,6 +100,11 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
     private static final int DEFAULT_PLAY_ONLION = 6; //播放默认视频Onlion
     private final static int SUCCESS = 7; //获取网络视频列表成功播放
 
+    private static final int GET_LUNBO = 8; //点播
+
+    private static final int CONNECT_TIMEOUT = 5000;//网络超时时间
+    private static final int FRAME_QUEUE_SIZE = 5;
+
     int count = 0;
     private static int THREE_MIN = 3 * 60 * 1000;
     String uuid = null;
@@ -107,6 +122,9 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
 
     ArrayList<Map<String, String>> urlDMList = new ArrayList<>();
 
+
+//    private WsListener wsListener = new WsListener();
+
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -115,18 +133,55 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         requestPermission(this);
+        cotext = getApplicationContext();
+        ANDROID_ID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
 
         listmap.put("curPage", "1");
-        cotext = getApplicationContext();
         HttpService.getInstance(this).getURLData(listmap, this);
-
-
-        ANDROID_ID = Settings.System.getString(getContentResolver(), Settings.System.ANDROID_ID);
 
         initView();
 
         mythread.start();
+
+        dianboThread.start();
+        //initWebsoket();
+
+
     }
+
+    private boolean getDianBo = true;
+    private Thread dianboThread = new Thread(){
+        @Override
+        public void run() {
+            while(true){
+                if (getDianBo){
+                    listmap.put("curPage", "1");
+                    HttpService.getInstance(cotext).getDianboData(listmap, MainActivity.this);
+                    Log.i(" lylog"," getDianBo OK ");
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+        }
+    };
+//
+//    private void initWebsoket() {
+//
+//        try {
+//            WebSocket ws = new WebSocketFactory().createSocket("url", CONNECT_TIMEOUT) //ws地址，和设置超时时间
+//                    .setFrameQueueSize(FRAME_QUEUE_SIZE)//设置帧队列最大值为5
+//                    .setMissingCloseFrameAllowed(false)//设置不允许服务端关闭连接却未发送关闭帧
+//                    .addListener(wsListener = new WsListener())//添加回调监听
+//                    .connectAsynchronously();//异步连接
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     private void requestPermission(MainActivity mainActivity) {
         final int REQUEST_EXTERNAL_STORAGE = 1;
@@ -446,14 +501,19 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         return false;
     }
 
+    private static String beifenUrl = null;
+
     @Override
     public void success(String result, int code) {
         if (code == GET_NET_URLDM) {
             urlList = JsonUtils.getIncetance().getURLlist(result);
-            Log.i("lylog", " success code = 1 urlList =" + urlList.toString());
+            Log.i("lylog", "GET_NET_URLDM success code = 1 urlList =" + urlList.toString());
             if (null != urlList.get("url")) {
                 currenttheme = urlList.get("theme");
                 HttpService.getInstance(this).getTokenUid(getApplicationContext(), this);
+
+                beifenUrl = urlList.get("url");
+
             } else {
 //                HttpService.getInstance().getURLData(listmap, this);
                 Log.i("lylogs", "  truelList =" + truelList);
@@ -481,6 +541,20 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
             msg.obj = randomUrl;
             msg.what = DEFAULT_PLAY_ONLION;
             mHandler.sendMessage(msg);
+        }
+
+        if (code == GET_LUNBO) {
+            urlList = JsonUtils.getIncetance().getURLlist(result);
+            Log.i("lylog", "GET_LUNBO success code = 1 urlList =" + urlList.toString() +" beifenUrl ="+beifenUrl);
+            if (null != urlList.get("url")) {
+                Log.i("lylog", "GET_LUNBO success111 ");
+                currenttheme = urlList.get("theme");
+                HttpService.getInstance(this).getTokenUid(getApplicationContext(), this);
+
+                beifenUrl = urlList.get("url");
+
+            }
+
         }
     }
 
@@ -636,5 +710,38 @@ public class MainActivity extends Activity implements MediaPlayer.OnCompletionLi
         mHandler.sendMessage(msg);
 
     }
-
+//
+//    private class WsListener extends WebSocketAdapter {
+//        @Override
+//        public void onTextMessage(WebSocket websocket, String text) throws Exception {
+//            super.onTextMessage(websocket, text);
+//            Log.i("lylog WsListener",text);
+//            String[] msgs = text.split("\\|");
+//            if (msgs.length >= 2) {
+////                NotificationShow(msgs[0], msgs[1]);
+////                sendReceiveMessageBroadcast(msgs[0], msgs[1]);
+//            }
+//        }
+//
+//        @Override
+//        public void onConnected(WebSocket websocket, Map<String, List<String>> headers)
+//                throws Exception {
+//            super.onConnected(websocket, headers);
+//            Log.i("lylog WsListener","连接成功");
+//        }
+//
+//        @Override
+//        public void onConnectError(WebSocket websocket, WebSocketException exception)
+//                throws Exception {
+//            super.onConnectError(websocket, exception);
+//            Log.i("lylog WsListener","连接错误");
+//        }
+//
+//        @Override
+//        public void onDisconnected(WebSocket websocket, WebSocketFrame serverCloseFrame, WebSocketFrame clientCloseFrame, boolean closedByServer)
+//                throws Exception {
+//            super.onDisconnected(websocket, serverCloseFrame, clientCloseFrame, closedByServer);
+//            Log.i("lylog WsListener","断开连接");
+//        }
+//    }
 }

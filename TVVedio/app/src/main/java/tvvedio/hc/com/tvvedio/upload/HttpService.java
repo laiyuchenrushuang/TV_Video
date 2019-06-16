@@ -28,6 +28,9 @@ import tvvedio.hc.com.tvvedio.utils.Utils;
  */
 
 public class HttpService {
+    private static final int GET_NET_URLDM = 1; //获取url的代码值
+    private static final int GET_LUNBO = 8; //获取url的代码值
+
     private static HttpService mHttpService;
     static Context mContext;
 
@@ -65,7 +68,7 @@ public class HttpService {
             @Override
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
-                    callback.success(response.body().string(), 1);
+                    callback.success(response.body().string(), GET_NET_URLDM);
                 } else {
                     callback.failed(response.body().string());
                     Log.i("lylogNet", " response error2");
@@ -73,6 +76,75 @@ public class HttpService {
             }
         });
     }
+
+    public void getDianboData(Map map, final HttpService.HttpServiceResult callback) {
+
+        map.put("pageSize", "1");//获取最新的
+        //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getTvVideo?curPage=1&pageSize=10
+
+        String requestUrl = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getTvVideo?" + "curPage=" + map.get("curPage") + "&" + "pageSize=" + map.get("pageSize");
+        Log.i("lylog", " getdianboData new url " + requestUrl);
+        try {
+            URL url = new URL(requestUrl);
+            HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
+            // 设置连接主机超时时间
+            urlConn.setConnectTimeout(5 * 1000);
+            //设置从主机读取数据超时
+            urlConn.setReadTimeout(5 * 1000);
+            // 设置是否使用缓存  默认是true
+            urlConn.setUseCaches(true);
+            // 设置为Post请求
+            urlConn.setRequestMethod("GET");
+            //urlConn设置请求头信息
+            //设置请求中的媒体类型信息。
+            urlConn.setRequestProperty("Content-Type", "application/json");
+            //设置客户端与服务连接类型
+            urlConn.addRequestProperty("Connection", "Keep-Alive");
+            // 开始连接
+            urlConn.connect();
+            if (urlConn.getResponseCode() == 200) {
+                // 获取返回的数据
+                String result = streamToString(urlConn.getInputStream());
+                Log.i("lylog ss", "轮播方式请求成功，result--->" + result);
+//                String string = response.body().string();
+                callback.success(result, GET_LUNBO);
+            } else {
+                Log.i("lylog ss", "轮播方式请求失败");
+            }
+            // 关闭连接
+            urlConn.disconnect();
+
+
+        } catch (IOException e) {
+            Log.i("lylog ss", "轮播方式请求失败  IOException ");
+            e.printStackTrace();
+        }
+
+
+//        Log.i("lylog", "getURLData url = " + url);
+//        OkHttpClient okHttpClient = new OkHttpClient();
+//        final Request request = new Request.Builder()
+//                .url(url)
+//                .build();
+//
+//        okHttpClient.newCall(request).enqueue(new Callback() {
+//            @Override
+//            public void onFailure(Call call, IOException e) {
+//                Log.i("lylogNet", " response error1");
+//            }
+//
+//            @Override
+//            public void onResponse(Call call, Response response) throws IOException {
+//                if (response.isSuccessful()) {
+//                    callback.success(response.body().string(), GET_NET_URLDM);
+//                } else {
+//                    callback.failed(response.body().string());
+//                    Log.i("lylogNet", " response error2");
+//                }
+//            }
+//        });
+    }
+
 
     public void getTokenUid(final Context context, final HttpService.HttpServiceResult callback) {
         String url = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getUidToken";
@@ -161,7 +233,7 @@ public class HttpService {
     public void getQcCodeIamage(String ANDROID_ID, final HttpServiceResult callbak) {
 
         String requestUrl = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/qr/getQr?" + "sbbh=" + ANDROID_ID;
-        Log.d("lylog", "  new url " + requestUrl);
+        Log.i("lylog", "  new url " + requestUrl);
         try {
             URL url = new URL(requestUrl);
             HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
