@@ -49,7 +49,7 @@ public class HttpService {
     public void getURLData(Map map, final HttpService.HttpServiceResult callback) {
 
         map.put("pageSize", "1");//获取最新的
-        //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getTvVideo?curPage=1&pageSize=10
+        //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getTvVideo?curPage=1&pageSize=1
 
         String url = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getTvVideo?" + "curPage=" + map.get("curPage") + "&" + "pageSize=" + map.get("pageSize");
 
@@ -83,7 +83,7 @@ public class HttpService {
         //http://xxjf.cdjg.chengdu.gov.cn:8090/jyptdbctl/video/getTvVideo?curPage=1&pageSize=10
 
         String requestUrl = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/video/getTvVideo?" + "curPage=" + map.get("curPage") + "&" + "pageSize=" + map.get("pageSize");
-        Log.i("lylog", " getdianboData new url " + requestUrl);
+        Log.i("lylog", "轮询 getdianboData new url " + requestUrl);
         try {
             URL url = new URL(requestUrl);
             HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
@@ -105,18 +105,18 @@ public class HttpService {
             if (urlConn.getResponseCode() == 200) {
                 // 获取返回的数据
                 String result = streamToString(urlConn.getInputStream());
-                Log.i("lylog ss", "轮播方式请求成功，result--->" + result);
+                Log.i("lylog ss", "点播方式请求成功，result--->" + result);
 //                String string = response.body().string();
                 callback.success(result, GET_LUNBO);
             } else {
-                Log.i("lylog ss", "轮播方式请求失败");
+                Log.i("lylog ss", "点播方式请求失败");
             }
             // 关闭连接
             urlConn.disconnect();
 
 
         } catch (IOException e) {
-            Log.i("lylog ss", "轮播方式请求失败  IOException ");
+            Log.i("lylog ss", "点播方式请求失败  IOException ");
             e.printStackTrace();
         }
 
@@ -233,7 +233,7 @@ public class HttpService {
     public void getQcCodeIamage(String ANDROID_ID, final HttpServiceResult callbak) {
 
         String requestUrl = Utils.NetWorkUtil.BASE_IP + "/jyptdbctl/qr/getQr?" + "sbbh=" + ANDROID_ID;
-        Log.i("lylog", "  new url " + requestUrl);
+        Log.i("lylog", "getQr  new url " + requestUrl);
         try {
             URL url = new URL(requestUrl);
             HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
